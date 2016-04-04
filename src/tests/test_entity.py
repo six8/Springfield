@@ -75,7 +75,7 @@ def test_jsonify():
     assert e.jsonify() == {'name': 'foo', 'location': None, 'department': None}
     e = TestEntity()
     assert e.jsonify() == {'name': 'foo', 'department': None}
-    e = TestEntity(created_at='2016-04-15')
+    e = TestEntity(created_at='2016-04-15T00:00:00')
     assert e.jsonify() == {'name': 'foo', 'department': None,
                            'created_at': '2016-04-15T00:00:00Z'}
 
@@ -95,6 +95,6 @@ def test_flatten():
     assert e.flatten() == {'name': 'foo', 'location': None, 'department': None}
     e = TestEntity()
     assert e.flatten() == {'name': 'foo', 'department': None}
-    e = TestEntity(created_at='2016-04-15')
+    e = TestEntity(created_at='2016-04-15T00:00:00')
     assert e.flatten() == {'name': 'foo', 'department': None,
-                           'created_at': date_parse('2016-04-15')}
+                           'created_at': date_parse('2016-04-15T00:00:00')}
