@@ -37,13 +37,13 @@ class EntityMetaClass(type):
                 attrs.pop(key)
             elif is_cls and issubclass(val, Field):
                 _fields[key] = val()
-                attrs.pop(key)                
+                attrs.pop(key)
             elif isinstance(val, EntityBase) or (is_cls and issubclass(val, EntityBase)):
                 # Wrap fields assigned to `Entity`s with an `EntityField`
                 _fields[key] = fields.EntityField(val)
                 attrs.pop(key)
-            elif isinstance(val, list) and len(val) == 1:      
-                attr = val[0]       
+            elif isinstance(val, list) and len(val) == 1:
+                attr = val[0]
                 is_cls = inspect.isclass(attr)
                 if isinstance(attr, EntityBase) or (is_cls and issubclass(attr, EntityBase)):
                     # Lists that contain just an Entity class are treated as
@@ -94,9 +94,11 @@ class Entity(EntityBase):
         Get the values as basic Python types
         """
         data = {}
-        for key, val in self.__values__.iteritems():
-            val = self.__fields__[key].flatten(val)
-            data[key] = val
+        for key, field in self.__fields__.iteritems():
+            val = getattr(self,  key)
+            if self.__values__.has_key(key) or \
+                (field.default is not Empty):
+                data[key] = field.flatten(val)
 
         return data
 
@@ -105,9 +107,11 @@ class Entity(EntityBase):
         Return a dictionary suitable for JSON encoding.
         """
         data = {}
-        for key, val in self.__values__.iteritems():
-            val = self.__fields__[key].jsonify(val)
-            data[key] = val
+        for key, field in self.__fields__.iteritems():
+            val = getattr(self,  key)
+            if self.__values__.has_key(key) or \
+                (field.default is not Empty):
+                data[key] = field.jsonify(val)
         return data
 
     def to_json(self):
@@ -166,7 +170,7 @@ class Entity(EntityBase):
         ancestory fields.
         """
         path = path or []
-        if '.' in target:            
+        if '.' in target:
             name, right = target.split('.', 1)
             soak = False
             if name.endswith('?'):
@@ -180,7 +184,7 @@ class Entity(EntityBase):
             if isinstance(field, fields.EntityField):
                 path.append((key, name, field, soak))
                 return self._get_field_path(field.type, right, path)
-            else:            
+            else:
                 raise KeyError('Expected EntityField for %s' % key)
         else:
             soak = False
@@ -206,7 +210,7 @@ class Entity(EntityBase):
     def __getitem__(self, name):
         try:
             if '.' in name:
-                pos = self        
+                pos = self
                 path = self._get_field_path(self, name)
                 last = path[-1]
                 path = path[:-1]
@@ -230,9 +234,9 @@ class Entity(EntityBase):
         raise KeyError(name)
 
     def __setitem__(self, name, value):
-        try:    
+        try:
             if '.' in name:
-                pos = self        
+                pos = self
                 path = self._get_field_path(self, name)
                 last = path[-1]
                 path = path[:-1]
@@ -245,7 +249,7 @@ class Entity(EntityBase):
                         pos = getattr(pos, field_name)
                     else:
                         raise ValueError('Expected Entity for %s' % field_key)
-                        
+
                 # This should be the end of our path, just set it
                 return setattr(pos, last[1], value)
 

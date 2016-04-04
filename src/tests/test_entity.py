@@ -1,5 +1,6 @@
-from springfield import Entity, FlexEntity, fields
 import pytest
+from springfield import Entity, FlexEntity, fields
+from springfield.timeutil import date_parse
 
 def test_entity():
     class TestEntity(Entity):
@@ -23,7 +24,7 @@ def test_bool_field():
         bool = fields.BooleanField()
 
     e = TestEntity()
-    
+
     for i in [True, 'yes', 'YES', 'on', 'true', '1', 1]:
         e.bool = i
         assert e.bool is True
@@ -50,11 +51,50 @@ def test_flex_entity():
     assert e.nofield == 'foo'
 
 def test_entity_field():
-    class SubEntity(Entity):  
+    class SubEntity(Entity):
         id = fields.IntField()
 
-    class TestEntity(Entity):    
+    class TestEntity(Entity):
         sub = fields.EntityField(SubEntity)
 
     e = TestEntity(sub=dict(id='2'))
     assert e.sub.id == 2
+
+def test_jsonify():
+    class TestEntity(Entity):
+        id = fields.IntField()
+        name = fields.StringField(default='foo')
+        location = fields.StringField()
+        department = fields.StringField(default=None)
+        created_at = fields.DateTimeField()
+    e = TestEntity(id=1, location='CA')
+    assert e.jsonify() == {'id': 1, 'name': 'foo', 'location': 'CA', 'department': None}
+    e = TestEntity(location='CA', name='bar')
+    assert e.jsonify() == {'name': 'bar', 'location': 'CA', 'department': None}
+    e = TestEntity(location=None)
+    assert e.jsonify() == {'name': 'foo', 'location': None, 'department': None}
+    e = TestEntity()
+    assert e.jsonify() == {'name': 'foo', 'department': None}
+    e = TestEntity(created_at='2016-04-15')
+    assert e.jsonify() == {'name': 'foo', 'department': None,
+                           'created_at': '2016-04-15T00:00:00Z'}
+
+def test_flatten():
+    class TestEntity(Entity):
+        id = fields.IntField()
+        name = fields.StringField(default='foo')
+        location = fields.StringField()
+        department = fields.StringField(default=None)
+        created_at = fields.DateTimeField()
+
+    e = TestEntity(id=1, location='CA')
+    assert e.flatten() == {'id': 1, 'name': 'foo', 'location': 'CA', 'department': None}
+    e = TestEntity(location='CA', name='bar')
+    assert e.flatten() == {'name': 'bar', 'location': 'CA', 'department': None}
+    e = TestEntity(location=None)
+    assert e.flatten() == {'name': 'foo', 'location': None, 'department': None}
+    e = TestEntity()
+    assert e.flatten() == {'name': 'foo', 'department': None}
+    e = TestEntity(created_at='2016-04-15')
+    assert e.flatten() == {'name': 'foo', 'department': None,
+                           'created_at': date_parse('2016-04-15')}

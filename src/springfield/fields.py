@@ -69,7 +69,7 @@ class Field(object):
 
     def get(self, instance, name):
         # Get value from document instance if available, if not use default
-        value = instance.__values__.get(name)
+        value = instance.__values__.get(name, Empty)
         if value is Empty:
             value = self.default
             # Allow callable default values
